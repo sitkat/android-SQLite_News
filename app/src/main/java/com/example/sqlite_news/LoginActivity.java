@@ -1,19 +1,29 @@
 package com.example.sqlite_news;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import java.util.concurrent.Executor;
+
 public class LoginActivity extends AppCompatActivity {
 
     EditText username, password;
     Button btnlogin;
+
+    private Executor executor;
+    private BiometricPrompt biometricPrompt;
+    private BiometricPrompt.PromptInfo promptInfo;
+
     DBHelper DB;
 
     @Override
@@ -25,9 +35,40 @@ public class LoginActivity extends AppCompatActivity {
         password = (EditText) findViewById(R.id.password1);
         btnlogin = (Button) findViewById(R.id.btnsignin1);
         DB = new DBHelper(this);
+
+        executor = ContextCompat.getMainExecutor(this);
+        biometricPrompt = new BiometricPrompt(LoginActivity.this,
+                executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationError(int errorCode, CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+                Log.i("ErrorAUTH", errString.toString());
+            }
+
+            @Override
+            public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+                Toast.makeText(LoginActivity.this, "Успешно!", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onAuthenticationFailed() {
+                super.onAuthenticationFailed();
+                Log.i("FailedAUTH", "FAIL");
+            }
+        });
+
+        promptInfo = new androidx.biometric.BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Авторизация")
+                .setSubtitle("Прислоните палец")
+                .setNegativeButtonText("Отмена")
+                .build();
+
+
         btnlogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                biometricPrompt.authenticate(promptInfo);
 
                 String user = username.getText().toString();
                 String pass = password.getText().toString();
